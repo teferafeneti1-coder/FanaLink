@@ -1,0 +1,17 @@
+{
+  "name": "fana-link-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "groq-sdk": "^1.2.0",
+    "mongoose": "^9.6.2",
+    "socket.io": "^4.8.3"
+  }
+}
