@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
-const API = import.meta.env.VITE_API_URL;
+// ✅ CRA FIXED ENV
+const API = process.env.REACT_APP_API_URL;
 
 export default function AmbulanceDriver() {
   const [referralId, setReferralId] = useState('');
@@ -44,9 +45,6 @@ export default function AmbulanceDriver() {
     }
   };
 
-  // =========================
-  // ROUTE FETCH (FIXED OSRM)
-  // =========================
   useEffect(() => {
     if (!referralId || !isTracking) return;
 
@@ -61,7 +59,6 @@ export default function AmbulanceDriver() {
         const hospitalLat = 9.3139;
         const hospitalLng = 42.1192;
 
-        // FIXED OSRM URL
         const url =
           `https://router.project-osrm.org/route/v1/driving/` +
           `${originLng},${originLat};${hospitalLng},${hospitalLat}` +
@@ -70,7 +67,6 @@ export default function AmbulanceDriver() {
         const osrmRes = await fetch(url);
         const routeData = await osrmRes.json();
 
-        // FIXED SAFE ACCESS
         if (routeData?.routes?.[0]?.geometry?.coordinates) {
           const coords = routeData.routes[0].geometry.coordinates.map((coord) => ({
             lat: coord[1],
@@ -88,14 +84,8 @@ export default function AmbulanceDriver() {
     fetchRouteGeometry();
   }, [isTracking, referralId]);
 
-  // =========================
-  // TRACKING LOOP (FIXED API)
-  // =========================
   useEffect(() => {
-    let watchId = null;
-    let highSpeedInterval = null;
-    let countdownInterval = null;
-    let currentIdx = 0;
+    let watchId;
 
     if (isTracking && referralId) {
       if (!navigator.geolocation) {
@@ -122,36 +112,20 @@ export default function AmbulanceDriver() {
         }
       };
 
-      const gpsOptions = {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      };
-
       watchId = navigator.geolocation.watchPosition(
-        (position) => {
-          sendLocationPacket(
-            position.coords.latitude,
-            position.coords.longitude
-          );
+        (pos) => {
+          sendLocationPacket(pos.coords.latitude, pos.coords.longitude);
         },
-        () => {
-          addLog("GPS fallback activated");
-        },
-        gpsOptions
+        () => addLog("GPS error"),
+        { enableHighAccuracy: true }
       );
 
       return () => {
         if (watchId) navigator.geolocation.clearWatch(watchId);
-        if (highSpeedInterval) clearInterval(highSpeedInterval);
-        if (countdownInterval) clearInterval(countdownInterval);
       };
     }
-  }, [isTracking, referralId, roadPoints]);
+  }, [isTracking, referralId]);
 
-  // =========================
-  // START/STOP
-  // =========================
   const handleToggleTracking = async () => {
     if (!referralId) {
       alert("Enter Referral ID");
@@ -170,7 +144,6 @@ export default function AmbulanceDriver() {
 
       if (res.ok) {
         setIsTracking(true);
-        setAlertOpen(false);
         addLog("🚀 Tracking started");
       }
     } catch (err) {
@@ -178,9 +151,6 @@ export default function AmbulanceDriver() {
     }
   };
 
-  // =========================
-  // UI (UNCHANGED)
-  // =========================
   return (
     <div style={{ maxWidth: '450px', margin: '20px auto', padding: '20px' }}>
       {alertOpen && (
@@ -189,7 +159,7 @@ export default function AmbulanceDriver() {
         </div>
       )}
 
-      <h2>Ambulance Driver</h2>
+      <h2>🚑 Ambulance Driver</h2>
 
       <input
         value={referralId}
@@ -202,9 +172,7 @@ export default function AmbulanceDriver() {
       </button>
 
       {currentCoords.lat && (
-        <p>
-          {currentCoords.lat}, {currentCoords.lng}
-        </p>
+        <p>{currentCoords.lat}, {currentCoords.lng}</p>
       )}
 
       <div>

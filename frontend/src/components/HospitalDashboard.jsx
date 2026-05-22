@@ -8,8 +8,8 @@ export default function HospitalDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // ✅ USE ENV API (FIXED)
-  const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  // ✅ FIXED (CRA ENV)
+  const API = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   const playEmergencyChime = () => {
     try {
@@ -49,7 +49,7 @@ export default function HospitalDashboard() {
 
     fetchActiveReferrals();
 
-    // ✅ FIXED SOCKET URL
+    // SOCKET
     const socket = io(API);
 
     socket.on('newReferral', (newCase) => {
@@ -115,15 +115,13 @@ export default function HospitalDashboard() {
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: referrals.length > 0 ? '1fr 1.5fr' : '1fr',
+        gridTemplateGridColumns: referrals.length > 0 ? '1fr 1.5fr' : '1fr',
         gap: '25px'
       }}>
 
         {/* LEFT PANEL */}
         <section>
-          <h2>
-            🚨 Active Referrals ({referrals.length})
-          </h2>
+          <h2>🚨 Active Referrals ({referrals.length})</h2>
 
           {referrals.length === 0 ? (
             <div style={{
@@ -158,9 +156,7 @@ export default function HospitalDashboard() {
                     style={{
                       padding: '15px',
                       background: isSelected ? '#e6f2ff' : '#fff',
-                      border: isSelected
-                        ? '2px solid #007bff'
-                        : '1px solid #ddd',
+                      border: isSelected ? '2px solid #007bff' : '1px solid #ddd',
                       borderLeft: `6px solid ${
                         isCritical ? '#dc3545' : '#ffc107'
                       }`,
