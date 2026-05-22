@@ -10,18 +10,19 @@ export default function AmbulanceDriver() {
   const [currentCoords, setCurrentCoords] = useState({ lat: null, lng: null });
   const [logMessages, setLogMessages] = useState([]);
   const [roadPoints, setRoadPoints] = useState([]);
+
+  // ── Vitals checklist (rendered in UI below) ──────────────────────────────
   const [alertOpen, setAlertOpen] = useState(false);
-  const [countdownLeft, setCountdownLeft] = useState(6.6);
   const [vitalsChecklist, setVitalsChecklist] = useState({
     airwayClear: false,
     pressureApplied: false,
-    vitalsLogged: false
+    vitalsLogged: false,
   });
 
   const addLog = (msg) => {
     setLogMessages((prev) => [
       `[${new Date().toLocaleTimeString()}] ${msg}`,
-      ...prev.slice(0, 5)
+      ...prev.slice(0, 5),
     ]);
   };
 
@@ -41,10 +42,11 @@ export default function AmbulanceDriver() {
       osc.start();
       osc.stop(audioCtx.currentTime + 0.4);
     } catch (e) {
-      console.log("Audio blocked");
+      console.log('Audio blocked');
     }
   };
 
+  // ── Fetch road route once tracking starts ────────────────────────────────
   useEffect(() => {
     if (!referralId || !isTracking) return;
 
@@ -70,26 +72,27 @@ export default function AmbulanceDriver() {
         if (routeData?.routes?.[0]?.geometry?.coordinates) {
           const coords = routeData.routes[0].geometry.coordinates.map((coord) => ({
             lat: coord[1],
-            lng: coord[0]
+            lng: coord[0],
           }));
 
           setRoadPoints(coords);
-          addLog("🗺️ Route loaded successfully");
+          addLog('🗺️ Route loaded successfully');
         }
       } catch (err) {
-        console.error("OSRM error:", err);
+        console.error('OSRM error:', err);
       }
     };
 
     fetchRouteGeometry();
   }, [isTracking, referralId]);
 
+  // ── Watch GPS and stream location to backend ─────────────────────────────
   useEffect(() => {
     let watchId;
 
     if (isTracking && referralId) {
       if (!navigator.geolocation) {
-        addLog("Geolocation not supported");
+        addLog('Geolocation not supported');
         setIsTracking(false);
         return;
       }
@@ -104,11 +107,11 @@ export default function AmbulanceDriver() {
             body: JSON.stringify({
               referralId: Number(referralId),
               lat,
-              lng
-            })
+              lng,
+            }),
           });
         } catch (err) {
-          console.error("Upload error:", err);
+          console.error('Upload error:', err);
         }
       };
 
@@ -116,7 +119,7 @@ export default function AmbulanceDriver() {
         (pos) => {
           sendLocationPacket(pos.coords.latitude, pos.coords.longitude);
         },
-        () => addLog("GPS error"),
+        () => addLog('GPS error'),
         { enableHighAccuracy: true }
       );
 
@@ -128,7 +131,7 @@ export default function AmbulanceDriver() {
 
   const handleToggleTracking = async () => {
     if (!referralId) {
-      alert("Enter Referral ID");
+      alert('Enter Referral ID');
       return;
     }
 
@@ -138,48 +141,125 @@ export default function AmbulanceDriver() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           referralId: Number(referralId),
-          vehicleNumber
-        })
+          vehicleNumber,
+        }),
       });
 
       if (res.ok) {
         setIsTracking(true);
-        addLog("🚀 Tracking started");
+        addLog('🚀 Tracking started');
       }
     } catch (err) {
-      addLog("Network error");
+      addLog('Network error');
     }
   };
 
+  const handleVitalToggle = (key) => {
+    setVitalsChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
   return (
-    <div style={{ maxWidth: '450px', margin: '20px auto', padding: '20px' }}>
+    <div style={{ maxWidth: '450px', margin: '20px auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+
+      {/* ── Emergency Alert Banner ─────────────────────────── */}
       {alertOpen && (
-        <div style={{ background: 'red', color: 'white', padding: 20 }}>
-          ALERT ACTIVE
+        <div style={{ background: 'red', color: 'white', padding: 20, borderRadius: 6, marginBottom: 12 }}>
+          🚨 ALERT ACTIVE
+          <button
+            onClick={() => setAlertOpen(false)}
+            style={{ marginLeft: 16, background: 'white', color: 'red', border: 'none', borderRadius: 4, padding: '2px 10px', cursor: 'pointer' }}
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
       <h2>🚑 Ambulance Driver</h2>
 
-      <input
-        value={referralId}
-        onChange={(e) => setReferralId(e.target.value)}
-        placeholder="Referral ID"
-      />
+      {/* ── Referral ID + Vehicle ──────────────────────────── */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+        <input
+          value={referralId}
+          onChange={(e) => setReferralId(e.target.value)}
+          placeholder="Referral ID"
+          style={{ flex: 1, padding: '8px', borderRadius: 4, border: '1px solid #ccc' }}
+        />
+        <input
+          value={vehicleNumber}
+          onChange={(e) => setVehicleNumber(e.target.value)}
+          placeholder="Vehicle No."
+          style={{ flex: 1, padding: '8px', borderRadius: 4, border: '1px solid #ccc' }}
+        />
+      </div>
 
-      <button onClick={handleToggleTracking}>
-        {isTracking ? "Running..." : "Start Tracking"}
-      </button>
+      {/* ── Start / Stop Tracking ─────────────────────────── */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <button
+          onClick={handleToggleTracking}
+          disabled={isTracking}
+          style={{
+            flex: 1,
+            padding: '10px',
+            background: isTracking ? '#6c757d' : '#28a745',
+            color: 'white',
+            border: 'none',
+            borderRadius: 4,
+            cursor: isTracking ? 'default' : 'pointer',
+          }}
+        >
+          {isTracking ? '📡 Tracking Active...' : 'Start Tracking'}
+        </button>
 
+        <button
+          onClick={() => { setAlertOpen(true); playAlertSiren(); }}
+          style={{ padding: '10px 14px', background: '#dc3545', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+        >
+          🔔 Alert
+        </button>
+      </div>
+
+      {/* ── Current GPS Coords ────────────────────────────── */}
       {currentCoords.lat && (
-        <p>{currentCoords.lat}, {currentCoords.lng}</p>
+        <p style={{ fontSize: '0.85em', color: '#555' }}>
+          📍 {currentCoords.lat.toFixed(5)}, {currentCoords.lng.toFixed(5)}
+        </p>
       )}
 
-      <div>
-        {logMessages.map((l, i) => (
-          <div key={i}>{l}</div>
+      {/* ── Route Info ───────────────────────────────────── */}
+      {roadPoints.length > 0 && (
+        <p style={{ fontSize: '0.85em', color: '#007bff' }}>
+          🗺️ Route: {roadPoints.length} points loaded
+        </p>
+      )}
+
+      {/* ── Vitals Checklist ─────────────────────────────── */}
+      <div style={{ background: '#f8f9fa', padding: 14, borderRadius: 6, marginBottom: 12 }}>
+        <strong>✅ Vitals Checklist</strong>
+        {Object.entries(vitalsChecklist).map(([key, checked]) => (
+          <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={() => handleVitalToggle(key)}
+            />
+            {key === 'airwayClear' && 'Airway Clear'}
+            {key === 'pressureApplied' && 'Pressure Applied'}
+            {key === 'vitalsLogged' && 'Vitals Logged'}
+          </label>
         ))}
       </div>
+
+      {/* ── Activity Log ─────────────────────────────────── */}
+      <div style={{ background: '#212529', color: '#00ff88', padding: 12, borderRadius: 6, fontSize: '0.8em', minHeight: 80 }}>
+        {logMessages.length === 0 ? (
+          <span style={{ color: '#555' }}>No activity yet...</span>
+        ) : (
+          logMessages.map((l, i) => (
+            <div key={i}>{l}</div>
+          ))
+        )}
+      </div>
+
     </div>
   );
 }
