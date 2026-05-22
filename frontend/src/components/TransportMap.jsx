@@ -1,85 +1,58 @@
 import { useState, useEffect } from 'react';
 
-// ✅ CRA FIXED ENV
+// ✅ CRA ENV
 const API = process.env.REACT_APP_API_URL;
 
-export default function AmbulanceDriver() {
-  const [referralId, setReferralId] = useState('');
-  const [isTracking, setIsTracking] = useState(false);
-  const [currentCoords, setCurrentCoords] = useState({ lat: null, lng: null });
-  const [logMessages, setLogMessages] = useState([]);
+export default function TransportMap({ referralId }) {
   const [roadPoints, setRoadPoints] = useState([]);
-
-  const addLog = (msg) => {
-    setLogMessages((prev) => [
-      `[${new Date().toLocaleTimeString()}] ${msg}`,
-      ...prev.slice(0, 5)
-    ]);
-  };
+  const [currentCoords, setCurrentCoords] = useState(null);
 
   useEffect(() => {
-    if (!referralId || !isTracking) return;
+    if (!referralId) return;
 
-    const fetchRouteGeometry = async () => {
+    const loadRoute = async () => {
       try {
         const res = await fetch(`${API}/api/transport/${referralId}`);
         const data = await res.json();
 
-        const originLat = data.originCoords?.lat || 9.2195;
-        const originLng = data.originCoords?.lng || 42.3314;
+        const originLat = data?.originCoords?.lat || 9.2195;
+        const originLng = data?.originCoords?.lng || 42.3314;
 
         const hospitalLat = 9.3139;
         const hospitalLng = 42.1192;
 
-        const osrmUrl =
+        const url =
           `https://router.project-osrm.org/route/v1/driving/` +
-          `${originLng},${originLat};${hospitalLng},${hospitalLat}` +
-          `?overview=full&geometries=geojson`;
+          `${originLng},${originLat};${hospitalLng},${hospitalLat}?overview=full&geometries=geojson`;
 
-        const osrmRes = await fetch(osrmUrl);
-        const routeData = await osrmRes.json();
+        const resRoute = await fetch(url);
+        const routeData = await resRoute.json();
 
         const coords = routeData?.routes?.[0]?.geometry?.coordinates || [];
 
-        const points = coords.map(([lng, lat]) => ({ lat, lng }));
+        const points = coords.map(([lng, lat]) => ({
+          lat,
+          lng,
+        }));
 
         setRoadPoints(points);
-        addLog("Route loaded");
       } catch (err) {
-        console.error(err);
+        console.error('Route error:', err);
       }
     };
 
-    fetchRouteGeometry();
-  }, [isTracking, referralId]);
-
-  const sendLocationPacket = async (lat, lng) => {
-    setCurrentCoords({ lat, lng });
-
-    await fetch(`${API}/api/transport/location`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        referralId: Number(referralId),
-        lat,
-        lng
-      })
-    });
-  };
+    loadRoute();
+  }, [referralId]);
 
   return (
-    <div>
-      <h2>Transport Tracking</h2>
+    <div style={{ padding: 10 }}>
+      <h3>🚑 Transport Map</h3>
 
-      <input
-        value={referralId}
-        onChange={(e) => setReferralId(e.target.value)}
-        placeholder="Referral ID"
-      />
-
-      <button onClick={() => setIsTracking(!isTracking)}>
-        {isTracking ? "Stop" : "Start"}
-      </button>
+      {roadPoints.length === 0 ? (
+        <p>Loading route...</p>
+      ) : (
+        <p>Route loaded: {roadPoints.length} points</p>
+      )}
     </div>
   );
 }

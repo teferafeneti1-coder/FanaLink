@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-// ✅ CRA FIXED ENV
+// ✅ CRA ENV
 const API = process.env.REACT_APP_API_URL;
 
 export default function ReferralForm() {
@@ -16,13 +16,33 @@ export default function ReferralForm() {
     originKebele: '',
   });
 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!formData.patientName || !formData.age) {
+      setError('Patient name and age required');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
     try {
-      const response = await fetch(`${API}/api/referral`, {
+      const res = await fetch(`${API}/api/referral`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           ...formData,
           heartRate: Number(formData.heartRate),
@@ -32,33 +52,95 @@ export default function ReferralForm() {
         }),
       });
 
-      const data = await response.json();
+      const data = await res.json();
 
-      if (!response.ok) throw new Error(data.error || 'Failed');
+      if (!res.ok) throw new Error(data.error || 'Failed to submit');
 
-      alert("Referral submitted successfully!");
+      alert('Referral submitted successfully');
+
+      setFormData({
+        patientName: '',
+        age: '',
+        sex: 'M',
+        heartRate: '',
+        respiratoryRate: '',
+        spo2: '',
+        temperature: '',
+        observations: '',
+        originKebele: '',
+      });
     } catch (err) {
-      alert("Error: " + err.message);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} style={{ padding: 20 }}>
+      <h2>Referral Form</h2>
+
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+
       <input
+        name="patientName"
         placeholder="Patient Name"
-        onChange={(e) =>
-          setFormData({ ...formData, patientName: e.target.value })
-        }
+        value={formData.patientName}
+        onChange={handleChange}
       />
 
       <input
+        name="age"
         placeholder="Age"
-        onChange={(e) =>
-          setFormData({ ...formData, age: e.target.value })
-        }
+        value={formData.age}
+        onChange={handleChange}
       />
 
-      <button type="submit">Submit Referral</button>
+      <input
+        name="heartRate"
+        placeholder="Heart Rate"
+        value={formData.heartRate}
+        onChange={handleChange}
+      />
+
+      <input
+        name="respiratoryRate"
+        placeholder="Respiratory Rate"
+        value={formData.respiratoryRate}
+        onChange={handleChange}
+      />
+
+      <input
+        name="spo2"
+        placeholder="SpO2"
+        value={formData.spo2}
+        onChange={handleChange}
+      />
+
+      <input
+        name="temperature"
+        placeholder="Temperature"
+        value={formData.temperature}
+        onChange={handleChange}
+      />
+
+      <textarea
+        name="observations"
+        placeholder="Observations"
+        value={formData.observations}
+        onChange={handleChange}
+      />
+
+      <input
+        name="originKebele"
+        placeholder="Origin Kebele"
+        value={formData.originKebele}
+        onChange={handleChange}
+      />
+
+      <button type="submit" disabled={loading}>
+        {loading ? 'Submitting...' : 'Submit Referral'}
+      </button>
     </form>
   );
 }
