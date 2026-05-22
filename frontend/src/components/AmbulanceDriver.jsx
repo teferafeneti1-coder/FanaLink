@@ -10,8 +10,6 @@ export default function AmbulanceDriver() {
   const [currentCoords, setCurrentCoords] = useState({ lat: null, lng: null });
   const [logMessages, setLogMessages] = useState([]);
   const [roadPoints, setRoadPoints] = useState([]);
-
-  // ── Vitals checklist (rendered in UI below) ──────────────────────────────
   const [alertOpen, setAlertOpen] = useState(false);
   const [vitalsChecklist, setVitalsChecklist] = useState({
     airwayClear: false,
@@ -46,7 +44,6 @@ export default function AmbulanceDriver() {
     }
   };
 
-  // ── Fetch road route once tracking starts ────────────────────────────────
   useEffect(() => {
     if (!referralId || !isTracking) return;
 
@@ -86,7 +83,6 @@ export default function AmbulanceDriver() {
     fetchRouteGeometry();
   }, [isTracking, referralId]);
 
-  // ── Watch GPS and stream location to backend ─────────────────────────────
   useEffect(() => {
     let watchId;
 
@@ -161,7 +157,6 @@ export default function AmbulanceDriver() {
   return (
     <div style={{ maxWidth: '450px', margin: '20px auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
 
-      {/* ── Emergency Alert Banner ─────────────────────────── */}
       {alertOpen && (
         <div style={{ background: 'red', color: 'white', padding: 20, borderRadius: 6, marginBottom: 12 }}>
           🚨 ALERT ACTIVE
@@ -176,7 +171,6 @@ export default function AmbulanceDriver() {
 
       <h2>🚑 Ambulance Driver</h2>
 
-      {/* ── Referral ID + Vehicle ──────────────────────────── */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
         <input
           value={referralId}
@@ -192,7 +186,6 @@ export default function AmbulanceDriver() {
         />
       </div>
 
-      {/* ── Start / Stop Tracking ─────────────────────────── */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <button
           onClick={handleToggleTracking}
@@ -218,21 +211,18 @@ export default function AmbulanceDriver() {
         </button>
       </div>
 
-      {/* ── Current GPS Coords ────────────────────────────── */}
       {currentCoords.lat && (
         <p style={{ fontSize: '0.85em', color: '#555' }}>
           📍 {currentCoords.lat.toFixed(5)}, {currentCoords.lng.toFixed(5)}
         </p>
       )}
 
-      {/* ── Route Info ───────────────────────────────────── */}
       {roadPoints.length > 0 && (
         <p style={{ fontSize: '0.85em', color: '#007bff' }}>
           🗺️ Route: {roadPoints.length} points loaded
         </p>
       )}
 
-      {/* ── Vitals Checklist ─────────────────────────────── */}
       <div style={{ background: '#f8f9fa', padding: 14, borderRadius: 6, marginBottom: 12 }}>
         <strong>✅ Vitals Checklist</strong>
         {Object.entries(vitalsChecklist).map(([key, checked]) => (
@@ -249,7 +239,6 @@ export default function AmbulanceDriver() {
         ))}
       </div>
 
-      {/* ── Activity Log ─────────────────────────────────── */}
       <div style={{ background: '#212529', color: '#00ff88', padding: 12, borderRadius: 6, fontSize: '0.8em', minHeight: 80 }}>
         {logMessages.length === 0 ? (
           <span style={{ color: '#555' }}>No activity yet...</span>
