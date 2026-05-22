@@ -5,7 +5,7 @@ const API = process.env.REACT_APP_API_URL;
 
 export default function TransportMap({ referralId }) {
   const [roadPoints, setRoadPoints] = useState([]);
-  const [currentCoords, setCurrentCoords] = useState(null);
+ 
 
   useEffect(() => {
     if (!referralId) return;
